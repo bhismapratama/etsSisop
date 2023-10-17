@@ -3,15 +3,15 @@
 #include <string.h>
 #include <unistd.h>
 
-// Fungsi-fungsi Soket
+// Socket functions
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #define MAX_DATA1 8
 
-/*  Harap diperhatikan bahwa karena keterbatasan waktu,
-    saya hanya bertujuan untuk memperoleh minimal 3 poin 
-    (saat ini 4 dari CI) untuk melewati tantangan ini. 
+/*  Note that due to being limited on time, I only aim to
+    obtain at least 3 marks (currently 4 from CI) to pass 
+    the hurdle. 
 */
 
 struct rpc_server {
@@ -22,8 +22,8 @@ struct rpc_server {
   int socket;
 };
 
-/*  Memperluas struktur data untuk menyertakan lokasi, karena tidak dapat
-    memodifikasi rpc.h */
+/*  Extending data structure to include location, as cannot
+    modify rpc.h */
 typedef struct {
   rpc_data data;
   int location;
@@ -44,10 +44,10 @@ rpc_server *
     server -> functions = NULL;
     server -> handlers = NULL;
 
-    // Persiapkan soket
+    // Set up socket
     server -> socket = socket(AF_INET6, SOCK_STREAM, 0);
 
-    // Opsi penggunaan kembali
+    // Reuse option
     int enable = 1;
     if (setsockopt(server -> socket, SOL_SOCKET, SO_REUSEADDR, & enable,
         sizeof(int)) == -1) {
@@ -58,14 +58,14 @@ rpc_server *
       return NULL;
     }
 
-    // Persiapkan alamat
+    // Set up address
     struct sockaddr_in6 address;
     memset( & address, 0, sizeof(address));
     address.sin6_family = AF_INET6;
     address.sin6_addr = in6addr_any;
     address.sin6_port = htons(port);
 
-    // Mengikat
+    // Binding
     if (bind(server -> socket, (struct sockaddr * ) & address,
         sizeof(address)) == -1) {
       close(server -> socket);
@@ -75,7 +75,7 @@ rpc_server *
       return NULL;
     }
 
-    // Dengarkan
+    // Listen
     if (listen(server -> socket, SOMAXCONN) == -1) {
       close(server -> socket);
       free(server -> functions);
@@ -90,7 +90,7 @@ rpc_server *
 int
 rpc_register(rpc_server * srv, char * name, rpc_handler handler) {
 
-  // Mengubah ukuran array secara dinamis untuk fungsi yang baru ditambahkan
+  // Dynamically resize arrays for new added function
   srv -> functions =
     (char ** ) realloc(srv -> functions,
       (srv -> functions_count + 1) * sizeof(char * ));
@@ -99,7 +99,7 @@ rpc_register(rpc_server * srv, char * name, rpc_handler handler) {
       (srv -> functions_count +
         1) * sizeof(rpc_handler));
 
-  // Menambahkan fungsi/handler ke server
+  // Add function/handler to server
   srv -> functions[srv -> functions_count] = strdup(name);
   srv -> handlers[srv -> functions_count] = handler;
   srv -> functions_count++;
@@ -107,7 +107,7 @@ rpc_register(rpc_server * srv, char * name, rpc_handler handler) {
   return 0;
 }
 
-// Cari apakah/di mana modul ada di server
+// Find if/where module exists on server
 int
 rpc_find_location(rpc_server * srv, char * name) {
   for (int i = 0; i < srv -> functions_count; i++) {
@@ -123,12 +123,12 @@ rpc_serve_all(rpc_server * srv) {
 
   while (1) {
 
-    // Deteksi pesan dari klien
+    // Detect client message
     int client = accept(srv -> socket, NULL, NULL);
     if (client < 0)
       continue;
 
-    // Deteksi jenis permintaan
+    // Detect request type
     rpc_request_type request_type;
     if (recv(client, & request_type, sizeof(request_type),
         0) == -1) {
@@ -138,7 +138,7 @@ rpc_serve_all(rpc_server * srv) {
 
     if (request_type == FIND) {
 
-      // Ammend nama modul dalam permintaan temukan
+      // Ammend name of module in find request
       size_t length;
       if (recv(client, & length, sizeof(length), 0) == -1) {
         close(client);
@@ -152,7 +152,7 @@ rpc_serve_all(rpc_server * srv) {
       };
       name[length] = '\0';
 
-      // Kirim keberadaan modul ke klien
+      // Send module existence to client
       int location = rpc_find_location(srv, name);
       if (send(client, & location, sizeof(location), 0) ==
         -1) {
@@ -164,14 +164,14 @@ rpc_serve_all(rpc_server * srv) {
       free(name);
     } else if (request_type == CALL) {
 
-      // Menerima lokasi penanganan dari klien
+      // Receive handler location from client
       rpc_data_location request;
       if (recv(client, & request, sizeof(request), 0) == -1) {
         close(client);
         continue;
       };
 
-      // Menerima format data dari klien
+      // Receive data format from client
       if (recv(client, & request.data.data2_len,
           sizeof(request.data.data2_len), 0) == -1) {
         close(client);
@@ -195,12 +195,12 @@ rpc_serve_all(rpc_server * srv) {
         continue;
       }
 
-      // Panggil penanganan
+      // Call the handler
       rpc_handler handler = srv -> handlers[request.location];
       rpc_data * response = handler( & (request.data));
       free(request.data.data2);
 
-      // Kirim konfirmasi ke klien
+      // Send confirmation to client
       if (response != NULL) {
         if (send(client, response, sizeof( * response), 0) ==
           -1) {
@@ -239,28 +239,28 @@ rpc_client *
 rpc_handle *
   rpc_find(rpc_client * cl, char * name) {
 
-    // Membuat soket
+    // Create socket
     int socket_fd = socket(AF_INET6, SOCK_STREAM, 0);
     if (socket_fd < 0) {
       close(socket_fd);
       return NULL;
     }
 
-    // Alamat server
+    // Server address
     struct sockaddr_in6 address;
     memset( & address, 0, sizeof(address));
     address.sin6_family = AF_INET6;
     inet_pton(AF_INET6, cl -> ip, & (address.sin6_addr));
     address.sin6_port = htons(cl -> port);
 
-    // Menghubungkan ke server
+    // Connect to server
     if (connect(socket_fd, (struct sockaddr * ) & address,
         sizeof(address)) < 0) {
       close(socket_fd);
       return NULL;
     }
 
-    // Kirim jenis permintaan ke server
+    // Send request type to server
     rpc_request_type request_type = FIND;
     if (send(socket_fd, & request_type, sizeof(request_type),
         0) == -1) {
@@ -268,7 +268,7 @@ rpc_handle *
       return NULL;
     };
 
-    // Kirim modul ke server
+    // Send module to server
     size_t length = strlen(name);
     if (send(socket_fd, & length, sizeof(length), 0) == -1) {
       close(socket_fd);
@@ -279,7 +279,7 @@ rpc_handle *
       return NULL;
     };
 
-    // Menerima indeks modul
+    // Receive module index
     int location;
     if (recv(socket_fd, & location, sizeof(location), 0) ==
       -1) {
@@ -291,7 +291,7 @@ rpc_handle *
       return NULL;
     }
 
-    // Menyimpan indeks fungsi dalam handle, kembalikan handle
+    // Store index of function in handle, return handle
     rpc_handle * handle = malloc(sizeof(rpc_handle));
     handle -> location = location;
     return handle;
@@ -301,31 +301,31 @@ rpc_data *
   rpc_call(rpc_client * cl, rpc_handle * h, rpc_data *
     payload) {
 
-    // Membuat soket
+    // Create socket
     int socket_fd = socket(AF_INET6, SOCK_STREAM, 0);
     if (socket_fd < 0) {
       close(socket_fd);
       return NULL;
     }
 
-    // Alamat server
+    // Server address
     struct sockaddr_in6 address;
     memset( & address, 0, sizeof(address));
     address.sin6_family = AF_INET6;
     inet_pton(AF_INET6, cl -> ip, & (address.sin6_addr));
     address.sin6_port = htons(cl -> port);
 
-    // Menghubungkan ke server
+    // Connect to server
     if (connect(socket_fd, (struct sockaddr * ) & address,
         sizeof(address)) < 0) {
       close(socket_fd);
       return NULL;
     }
 
-    // Persiapkan struktur data rpc
+    // Set up rpc data struct
     rpc_data_location request;
 
-    // Tugas 5, maksimum 8 byte
+    // Handle Task 5 requirement, 8 bytes max
     if (sizeof(payload -> data1) > MAX_DATA1) {
       close(socket_fd);
       return NULL;
@@ -333,7 +333,7 @@ rpc_data *
     request.data = * payload;
     request.location = h -> location;
 
-    // Kirim jenis permintaan ke server
+    // Send request type to server
     rpc_request_type request_type = CALL;
     if (send(socket_fd, & request_type, sizeof(request_type),
         0) == -1) {
@@ -341,7 +341,7 @@ rpc_data *
       return NULL;
     };
 
-    // Kirim bidang data yang benar ke server
+    // Send correct data fields to server
     if (send(socket_fd, & request, sizeof(request), 0) == -1) {
       close(socket_fd);
       return NULL;
@@ -357,7 +357,7 @@ rpc_data *
       return NULL;
     };
 
-    // Dapatkan dan kembalikan respons
+    // Get and return response
     rpc_data * response = malloc(sizeof(rpc_data));
     if (recv(socket_fd, response, sizeof( * response), 0) ==
       -1) {
