@@ -5,15 +5,16 @@
 #include <getopt.h>
 #include <string.h>
 
+// Mendeklarasikan prototipe fungsi
 rpc_data *add2_i8(rpc_data *);
 
 int main(int argc, char *argv[]) {
 
-    // Correctly parse command line args
+    // Memastikan argumen command line terparses dengan benar
     char *port;
     int command;
 
-    // getopt appears to be needed for &
+    // getopt diperlukan untuk mendapatkan opsi "&"
     while ((command = getopt(argc, argv, "p:")) != -1) {
         switch (command) {
             case 'p':
@@ -30,12 +31,12 @@ int main(int argc, char *argv[]) {
 
     state = rpc_init_server(3000);
     if (state == NULL) {
-        fprintf(stderr, "Failed to init\n");
+        fprintf(stderr, "Gagal menginisialisasi\n");
         exit(EXIT_FAILURE);
     }
 
     if (rpc_register(state, "add2", add2_i8) == -1) {
-        fprintf(stderr, "Failed to register add2\n");
+        fprintf(stderr, "Gagal mendaftarkan add2\n");
         exit(EXIT_FAILURE);
     }
 
@@ -44,24 +45,24 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-/* Adds 2 signed 8 bit numbers */
-/* Uses data1 for left operand, data2 for right operand */
+/* Menambahkan dua bilangan bertipe int8_t */
+/* Menggunakan data1 sebagai operand kiri, data2 sebagai operand kanan */
 rpc_data *add2_i8(rpc_data *in) {
 
-    /* Check data2 */
+    /* Memeriksa data2 */
     if (in->data2 == NULL || in->data2_len != 1) {
         return NULL;
     }
 
-    /* Parse request */
+    /* Menganalisis permintaan */
     char n1 = in->data1;
     char n2 = ((char *)in->data2)[0];
 
-    /* Perform calculation */
-    printf("add2: arguments %d and %d\n", n1, n2);
+    /* Melakukan perhitungan */
+    printf("add2: argumen %d dan %d\n", n1, n2);
     int res = n1 + n2;
 
-    /* Prepare response */
+    /* Menyiapkan respons */
     rpc_data *out = malloc(sizeof(rpc_data));
     assert(out != NULL);
     out->data1 = res;

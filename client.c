@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[]) {
 
-    // Correctly parse command line args
+    // Mem-parsing argumen baris perintah dengan benar
     char *ip;
     char *port;
     int command;
@@ -36,30 +36,30 @@ int main(int argc, char *argv[]) {
 
     rpc_handle *handle_add2 = rpc_find(state, "add2");
     if (handle_add2 == NULL) {
-        fprintf(stderr, "ERROR: Function add2 does not exist\n");
+        fprintf(stderr, "ERROR: Fungsi add2 tidak ada\n");
         exit_code = 1;
         goto cleanup;
     }
 
     for (int i = 0; i < 2; i++) {
-        /* Prepare request */
+        /* Menyiapkan permintaan */
         char left_operand = i;
         char right_operand = 100;
         rpc_data request_data = {
             .data1 = left_operand, .data2_len = 1, .data2 = &right_operand};
 
-        /* Call and receive response */
+        /* Memanggil dan menerima respons */
         rpc_data *response_data = rpc_call(state, handle_add2, &request_data);
         if (response_data == NULL) {
-            fprintf(stderr, "Function call of add2 failed\n");
+            fprintf(stderr, "Panggilan fungsi add2 gagal\n");
             exit_code = 1;
             goto cleanup;
         }
 
-        /* Interpret response */
+        /* Menafsirkan respons */
         assert(response_data->data2_len == 0);
         assert(response_data->data2 == NULL);
-        printf("hasil perhitungan %d + %d: %d\n", left_operand, right_operand,
+        printf("Hasil perhitungan %d + %d: %d\n", left_operand, right_operand,
             response_data->data1);
         rpc_data_free(response_data);
     }

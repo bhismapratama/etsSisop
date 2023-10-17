@@ -1,60 +1,33 @@
-# C RPC Server
+1. Dengan implementasi ini, server dapat menerima panggilan dari siapa pun - hal ini karena program (tidak termasuk tugas selanjutnya yang belum saya implementasikan) adalah simulasi untuk tujuan demonstrasi, dan oleh karena itu pembatasan tidak diperlukan. Meskipun server menerima dari siapa saja, server ideal seharusnya membatasi akses untuk keamanan.
 
-This repository contains a Remote Procedure Call (RPC) server written in C. It can register, locate, and call functions remotely using a simple client-server model.
+2. Jika autentikasi akan diimplementasikan, itu sebaiknya dilakukan di dalam kerangka kerja RPC, karena lebih mudah diimplementasikan dan konsisten (yaitu di satu tempat daripada beberapa, yang bahkan mungkin tidak perlu terduplikasi).
 
-## Table of Contents
+3. Saya menggunakan TCP, karena lebih mudah diimplementasikan, dan akan mencegah kehilangan atau paket yang rusak. Kompromi dibandingkan dengan UDP adalah bahwa TCP lebih lambat, namun penyebab mengapa itu lambat adalah alasan mengapa itu diutamakan dari awal (pengiriman terurut dan pengiriman ulang).
 
-1. [Features](#Features)
-2. [Getting Started](#Getting-Started)
-   - [Prerequisites](#Prerequisites)
-   - [Installation](#Installation)
-3. [Usage](#Usage)
+4. Soket server sebaiknya dibuat saat server dimulai, dan soket klien sebaiknya dibuat saat klien akan melakukan permintaan.
 
-## Features
+5. Secara dinamis. Tidak tahu pasti berapa banyak klien atau server yang akan ada, jadi alokasi memori dinamis memungkinkan program hanya menggunakan memori yang diperlukan (daripada melebihi dengan mengalokasikan sejumlah besar memori). Implikasi utamanya adalah dengan alokasi memori dinamis, harus berhati-hati terhadap kebocoran memori.
 
-- **Remote Procedure Call**: Allows remote function registration and invocation.
-- **IPv6 support**: The server uses IPv6 for network communication.
-- **Custom Data Structure**: Implements a custom data structure for handling requests.
+6. Karena tidak kompatibel. Untuk memungkinkan urutan byte yang berbeda antara host, konversi ke urutan byte jaringan sebagai media data umum, kemudian mengonversi kembali.
 
-## Getting Started
 
-### Prerequisites
+Protokol:
 
-- GCC, a compiler for C and C++, is needed to compile and run this program.
+Protokol lapisan aplikasi:
+- Klien terhubung ke server dengan alamat IP dan nomor port.
+- Klien mencoba mencari fungsi, dan jika ada, mengambil lokasi fungsi.
+- Klien menggunakan hanlde untuk memanggil fungsi.
+- Server mengeksekusi fungsi, mengembalikan Hasil.
+- Klien mencetak hasil.
+- Klien kemudian melakukan panggilan ganda atau keluar.
 
-### Installation
+Paket terstruktur dengan:
+- Jenis permintaan (CARI atau PANGGIL)
+- Nama fungsi, jika CARI
+- Lokasi handle dan fungsi, jika PANGGIL
 
-1. Clone this repository using git:
+Blok data kami berukuran tetap, untuk kemudahan.
 
-```
-git clone https://github.com/shaneSleeman/rpc-server.git
-```
+Server mengembalikan -1 untuk fungsi yang tidak ada, dan ketika panjang data terlalu besar.
 
-2. Change to the project's directory:
-
-```
-cd rpc-server
-```
-
-3. Compile the program:
-
-```
-gcc -o server server.c
-gcc -o client client.c
-```
-
-## Usage
-
-1. Start the server:
-
-```
-./server
-```
-
-2. In another terminal, use the client to send requests to the server:
-
-```
-./client
-```
-
-The server and client communicate using a custom protocol for function registration, location, and invocation. The data structures used for this communication are defined in `rpc.h`.
+Ketika pesan melebihi ukuran paket IP maksimum, TCP/IP akan memecah dan mereload kembali.
