@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
         /* Interpret response */
         assert(response_data->data2_len == 0);
         assert(response_data->data2 == NULL);
-        printf("Result of adding %d and %d: %d\n", left_operand, right_operand,
+        printf("hasil perhitungan %d + %d: %d\n", left_operand, right_operand,
             response_data->data1);
         rpc_data_free(response_data);
     }
